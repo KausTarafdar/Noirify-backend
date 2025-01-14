@@ -6,6 +6,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from utils.video_processing import video_to_bw
 from functions.check_image_or_video import check_file_type
 from utils.response_helpers import error_response, success_response
 
@@ -79,30 +80,6 @@ async def process_data(
     elif file_type == 'video':
         output_file = os.path.join(BASE_DIR, UPLOAD_DIR, f"bw_{body.file_name}")
 
-        cap = cv2.VideoCapture(file_path)
-        if not cap.isOpened():
-            raise HTTPException(status_code=400, detail="Invalid video file")
+        out_bw_video_path = video_to_bw(input_video_path=file_path, output_video_path=output_file)
 
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        out = cv2.VideoWriter(
-            output_file,
-            fourcc,
-            cap.get(cv2.CAP_PROP_FPS),
-            (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))),
-            isColor=False,
-        )
-
-        frame_no = 0
-        while cap.isOpened():
-            frame_no += 1
-            ret, frame = cap.read()
-            if not ret:
-                break
-            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            print("Generating frames..", frame_no)
-            out.write(gray_frame)
-
-        cap.release()
-        out.release()
-
-        return StreamingResponse(open(output_file, "rb"), media_type="video/mp4")
+        return StreamingResponse(open(out_bw_video_path, "rb"), media_type="video/mp4")
