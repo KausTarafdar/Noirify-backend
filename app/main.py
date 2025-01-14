@@ -1,11 +1,9 @@
 from typing import Union
-
 from fastapi import FastAPI
 
-from .api import auth, data_processor
+from api.data_processor import router as data_router
 
 app = FastAPI()
-
 
 @app.get("/health")
 async def health():
@@ -14,5 +12,5 @@ async def health():
         "Status": "OK",
     }
 
-app.include_router(auth.router)
-app.include_router(data_processor.router)
+# app.include_router()
+app.include_router(router=data_router)
