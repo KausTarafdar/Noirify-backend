@@ -1,4 +1,3 @@
-from typing import Union
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -28,5 +27,4 @@ async def health():
         "Status": "OK",
     }
 
-# app.include_router()
 app.include_router(router=data_router)
