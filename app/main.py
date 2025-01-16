@@ -20,7 +20,7 @@ app.add_middleware(CORSMiddleware,
     allow_headers=["*"],
 )
 
-@app.get("/health")
+@app.get("/")
 async def health():
     return {
         "Response":"200",

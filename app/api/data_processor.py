@@ -79,7 +79,7 @@ async def process_data(
         elif file_type == 'video':
             output_file = os.path.join(BASE_DIR, UPLOAD_DIR, f"bw_{file_name}")
 
-            out_bw_video_path = await video_to_bw(input_video_path=file_path, output_video_path=output_file)
+            out_bw_video_path = await video_to_bw(brightness=brightness, sharpness=sharpness, contrast=contrast, input_video_path=file_path, output_video_path=output_file)
 
             def iterfile():
                 with open(out_bw_video_path, "rb") as file_data:

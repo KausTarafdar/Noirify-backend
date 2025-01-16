@@ -4,10 +4,12 @@ import subprocess
 import uuid
 import cv2
 
+from .adjust_properties import adjust_image_properties
+
 BASE_DIR = Path(__file__).parents[2]
 UPLOAD_DIR = "uploads"
 
-async def video_to_bw(input_video_path: str, output_video_path: str) -> str:
+async def video_to_bw(input_video_path: str, output_video_path: str, brightness, sharpness, contrast) -> str:
     """
     Converts a video to black and white while preserving the original audio.
     """
@@ -15,6 +17,7 @@ async def video_to_bw(input_video_path: str, output_video_path: str) -> str:
         raise FileNotFoundError(f"Input video file '{input_video_path}' not found.")
 
     try:
+        print(input_video_path)
         # Ensure the output path is unique
         if os.path.exists(output_video_path):
             output_video_path = f"{os.path.splitext(output_video_path)[0]}_{uuid.uuid4().hex}.mp4"
@@ -38,14 +41,15 @@ async def video_to_bw(input_video_path: str, output_video_path: str) -> str:
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height), isColor=False)
 
-        def process_frame(frame):
-            return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        def process_frame(frame, brightness, sharpness, contrast):
+            pre_frame = adjust_image_properties(frame, int(brightness), int(sharpness), int(contrast))
+            return cv2.cvtColor(pre_frame, cv2.COLOR_BGR2GRAY)
 
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
-            gray_frame = process_frame(frame)
+            gray_frame = process_frame(frame, brightness, sharpness, contrast)
             out.write(gray_frame)
 
         cap.release()
