@@ -22,10 +22,10 @@ router = APIRouter(
 @router.post("/upload")
 async def upload_file(
     request: Request,
-    file: UploadFile = File(...),  # File to be uploaded
-    name: str = Form(...),  # Name of the file
-    chunk_number: int = Form(...),  # Current chunk number
-    total_chunks: int = Form(...),  # Total number of chunks
+    file: UploadFile = File(...),
+    name: str = Form(...),
+    chunk_number: int = Form(...),
+    total_chunks: int = Form(...),
 ):
     try:
         ext = name.split(".")[-1]
@@ -33,7 +33,6 @@ async def upload_file(
         tmp_filename = f"tmp_{hashlib.md5((name + client_ip).encode()).hexdigest()}.{ext}"
         tmp_filepath = os.path.join(BASE_DIR, UPLOAD_DIR, tmp_filename)
         data = await file.read()
-        # decoded_data = base64.b64decode(data.split(b",")[1]) if b"," in data else data
 
         if chunk_number == 0 and os.path.exists(tmp_filepath):
             os.remove(tmp_filepath)

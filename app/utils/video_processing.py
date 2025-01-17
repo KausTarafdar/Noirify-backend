@@ -17,17 +17,23 @@ async def video_to_bw(input_video_path: str, output_video_path: str, brightness,
         raise FileNotFoundError(f"Input video file '{input_video_path}' not found.")
 
     try:
-        print(input_video_path)
         # Ensure the output path is unique
         if os.path.exists(output_video_path):
             output_video_path = f"{os.path.splitext(output_video_path)[0]}_{uuid.uuid4().hex}.mp4"
 
         # Extract audio
         temp_audio_path = f"{output_video_path}_audio.aac"
+        has_audio = False
         extract_audio_command = [
-            "ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a", temp_audio_path
+            "ffmpeg", "-y", "-i", input_video_path, "-q:a", "0", "-map", "a?", temp_audio_path
         ]
-        subprocess.run(extract_audio_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        try:
+            subprocess.run(extract_audio_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+            if os.path.exists(temp_audio_path):
+                print(f"Audio extracted to {temp_audio_path}")
+                has_audio = True
+        except:
+            print("No audio stream found. Proceeding without audio.")
 
         # Process video to grayscale
         cap = cv2.VideoCapture(input_video_path)
@@ -55,19 +61,38 @@ async def video_to_bw(input_video_path: str, output_video_path: str, brightness,
         cap.release()
         out.release()
 
-        # Merge audio and video
         final_out_video_path = f"{os.path.splitext(output_video_path)[0]}_bw_{uuid.uuid4().hex[:6]}.mp4"
-        merge_command = [
-            "ffmpeg", "-y", "-i", output_video_path, "-i", temp_audio_path,
-            "-c:v", "copy", "-c:a", "aac", "-vcodec", "libx264",
-            final_out_video_path
-        ]
-        subprocess.run(merge_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
 
-        os.remove(temp_audio_path)
+        if has_audio:
+            merge_command = [
+                "ffmpeg", "-y",
+                "-i", output_video_path,
+                "-i", temp_audio_path,
+                "-map", "0:v?",
+                "-map", "1:a?",
+                "-vcodec", "libx264",
+                "-c:a", "aac",
+                "-shortest",
+                final_out_video_path
+            ]
+            subprocess.run(merge_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        else:
+            finalise_command = [
+                "ffmpeg", "-y",
+                "-i", output_video_path,
+                "-c:v", "libx264",
+                "-b:a", "192k",
+                "-preset", "fast",
+                final_out_video_path
+            ]
+            subprocess.run(finalise_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+
+        if has_audio:
+            os.remove(temp_audio_path)
         os.remove(output_video_path)
 
         return final_out_video_path
+
 
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"FFmpeg command failed: {e.stderr.decode()}")
